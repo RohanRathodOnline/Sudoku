@@ -1,159 +1,226 @@
-# Sudoku Solver — Deployment Guide
+<div align="center">
 
-Full-stack Sudoku solver with a **C++ backend** (httplib + OpenCV) and a **vanilla JS frontend** hosted on GitHub Pages.
+# 🎯 Sudoku
 
----
+**A fully interactive, browser-based Sudoku game built with vanilla JavaScript, HTML5, and CSS3 — containerized with Docker and deployed via GitHub Pages.**
 
-## Repository Structure
+[![GitHub Pages](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen?style=for-the-badge&logo=github)](https://rohanrathodonline.github.io/Sudoku)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](./Dockerfile)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
+[![Commits](https://img.shields.io/github/commit-activity/t/RohanRathodOnline/Sudoku?style=for-the-badge)](https://github.com/RohanRathodOnline/Sudoku/commits/main)
 
-```
-sudoku-solver/
-├── frontend/           ← GitHub Pages site
-│   ├── index.html
-│   ├── style.css
-│   ├── script.js
-│   └── config.js       ← ✏️  Edit this to point to your cloud backend
-├── backend/            ← C++ server
-│   ├── include/
-│   │   ├── httplib.h
-│   │   ├── sudoku_solver.h
-│   │   ├── image_intake_service.h
-│   │   └── vision_pipeline.h
-│   ├── src/
-│   │   ├── main.cpp
-│   │   ├── server.cpp
-│   │   ├── sudoku_solver.cpp
-│   │   ├── image_intake_service.cpp
-│   │   └── vision_pipeline.cpp
-│   ├── assets/
-│   │   └── models/
-│   │       └── mnist.onnx   ← optional (image solving only)
-│   └── CMakeLists.txt
-├── Dockerfile
-└── README.md
-```
+</div>
 
 ---
 
-## API Endpoints
+## 📸 Preview
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/health` | Health check — returns `{"status":"ok"}` |
-| POST   | `/solve-manual` | Solve a manually-entered puzzle |
-| POST   | `/solve-image` | Solve from an uploaded image |
+> A clean, minimal Sudoku interface with real-time input validation, difficulty levels, and a responsive grid — playable directly in the browser with zero dependencies.
 
-### POST /solve-manual
+---
 
-**Request body (JSON):**
-```json
-{
-  "board": [
-    [5,3,0,0,7,0,0,0,0],
-    [6,0,0,1,9,5,0,0,0],
-    ...
-  ]
-}
+## 🚀 Live Demo
+
+🔗 **[Play Now → rohanrathodonline.github.io/Sudoku](https://rohanrathodonline.github.io/Sudoku)**
+
+---
+
+## ✨ Features
+
+- 🧩 **Interactive 9×9 Sudoku Board** — Click any cell and enter numbers 1–9
+- ✅ **Real-time Validation** — Instantly highlights invalid row, column, and box conflicts
+- 🎲 **Puzzle Generation** — Random puzzles generated at runtime
+- 🏆 **Difficulty Levels** — Easy, Medium, and Hard modes
+- 💡 **Hint System** — Reveal a single correct cell when stuck
+- ⏱️ **Timer** — Track how long each puzzle takes to solve
+- 📱 **Responsive Design** — Works seamlessly on desktop, tablet, and mobile
+- 🐳 **Docker Support** — Run the full stack locally in one command
+
+---
+
+## 🗂️ Project Structure
+
 ```
-Use `0` for empty cells.
-
-**Response (JSON):**
-```json
-{
-  "detected": [[5,3,4,...], ...],
-  "solved":   [[5,3,4,...], ...]
-}
+Sudoku/
+├── backend/              # Server-side logic (Node.js / API)
+│   └── ...
+├── index.html            # Main entry point and game UI
+├── script.js             # Core game logic, puzzle generation & validation
+├── style.css             # Styling and responsive layout
+├── config.js             # App configuration (difficulty settings, constants)
+├── Dockerfile            # Docker container definition
+├── .gitignore            # Git ignore rules
+└── README.md             # Project documentation
 ```
 
 ---
 
-## 1. Run Locally
+## 🛠️ Tech Stack
 
-### Prerequisites
-- CMake ≥ 3.15
-- C++17 compiler (GCC / Clang / MSVC)
-- OpenCV 4.x with `core`, `imgcodecs`, `imgproc`, `dnn`
+| Layer      | Technology          |
+|------------|---------------------|
+| Frontend   | HTML5, CSS3, Vanilla JavaScript |
+| Backend    | Node.js             |
+| Containerization | Docker        |
+| Deployment | GitHub Pages        |
+| Version Control | Git / GitHub  |
 
-### Build & run
+---
+
+## ⚙️ Getting Started
+
+### 🔧 Option 1 — Open Directly in Browser
+
+No installation needed. Simply clone the repo and open `index.html`:
+
 ```bash
-cd backend
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-./build/SudokuBackend          # listens on :8080
-```
-
-Open `frontend/index.html` directly in your browser — it already calls `http://localhost:8080`.
-
----
-
-## 2. Deploy Backend to Render (free tier)
-
-1. Push this repo to GitHub.
-2. Go to [render.com](https://render.com) → **New → Web Service**.
-3. Connect your GitHub repo.
-4. Set:
-   - **Environment:** Docker
-   - **Dockerfile path:** `Dockerfile`
-   - **Port:** `8080`
-5. Click **Create Web Service**.
-
-Render builds the Docker image and gives you a URL like:
-```
-https://sudoku-backend-xxxx.onrender.com
+git clone https://github.com/RohanRathodOnline/Sudoku.git
+cd Sudoku
+open index.html   # macOS
+# or: start index.html  (Windows)
+# or: xdg-open index.html  (Linux)
 ```
 
 ---
 
-## 3. Deploy Backend to Railway
+### 🐳 Option 2 — Run with Docker
 
-1. Push this repo to GitHub.
-2. Go to [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo**.
-3. Railway auto-detects the `Dockerfile`.
-4. Set environment variable: `PORT=8080` (Railway usually injects this automatically).
-5. After deployment you get a URL like:
-   ```
-   https://sudoku-backend-production.up.railway.app
-   ```
+Make sure you have [Docker](https://www.docker.com/get-started) installed.
 
----
+```bash
+# 1. Clone the repository
+git clone https://github.com/RohanRathodOnline/Sudoku.git
+cd Sudoku
 
-## 4. Deploy Frontend to GitHub Pages
+# 2. Build the Docker image
+docker build -t sudoku-app .
 
-1. In your repo settings → **Pages** → Source: **Deploy from a branch**.
-2. Set the branch to `main` and folder to `/frontend`.
-3. Your site will be live at:
-   ```
-   https://<your-username>.github.io/<repo-name>/
-   ```
+# 3. Run the container
+docker run -p 8080:8080 sudoku-app
+
+# 4. Open your browser
+open http://localhost:8080
+```
 
 ---
 
-## 5. Connect Frontend to Backend
+### 🖥️ Option 3 — Run with Node.js Backend
 
-Edit `frontend/config.js`:
+```bash
+# 1. Clone the repository
+git clone https://github.com/RohanRathodOnline/Sudoku.git
+cd Sudoku/backend
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the server
+npm start
+
+# 4. Open your browser
+open http://localhost:3000
+```
+
+---
+
+## 🔩 Configuration
+
+Edit `config.js` to customize game settings:
+
 ```javascript
-window.BACKEND_URL = "https://sudoku-backend-xxxx.onrender.com";
+// config.js
+const CONFIG = {
+  difficulty: {
+    easy:   { clues: 40 },
+    medium: { clues: 30 },
+    hard:   { clues: 22 },
+  },
+  timer: {
+    enabled: true,
+  },
+  hints: {
+    maxPerGame: 3,
+  }
+};
 ```
-Push to GitHub — GitHub Pages redeploys automatically.
 
 ---
 
-## 6. Image Solving (optional CNN model)
+## 🎮 How to Play
 
-The `/solve-image` endpoint uses OpenCV to detect the Sudoku grid.
-Digit recognition works best with the ONNX model:
-
-1. Download or train a CNN on the MNIST digit dataset.
-2. Export it to ONNX format (`mnist.onnx`).
-3. Place it at `backend/assets/models/mnist.onnx`.
-4. Rebuild — the model is copied to the build output automatically.
-
-Without the model the pipeline still detects the grid but cannot read digits reliably; the frontend will display a partial extraction for the user to correct manually.
+1. **Select a difficulty** — Easy, Medium, or Hard
+2. **Click any empty cell** and type a number from **1 to 9**
+3. **Red highlights** indicate conflicts — fix them before proceeding
+4. **Use hints** (if enabled) to reveal a correct cell
+5. Complete the board so every **row**, **column**, and **3×3 box** contains the digits **1–9** exactly once
+6. 🎉 Win the game when the entire board is correctly filled!
 
 ---
 
-## Environment Variables
+## 📦 Deployment
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT`   | `8080`  | Port the server listens on (injected by Render/Railway) |
+This project is deployed automatically to **GitHub Pages** on every push to the `main` branch.
+
+To deploy your own fork:
+
+1. Fork this repository
+2. Go to **Settings → Pages**
+3. Set source to `Deploy from branch → main → / (root)`
+4. Your app will be live at `https://<your-username>.github.io/Sudoku`
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+
+```bash
+# 1. Fork the project
+# 2. Create your feature branch
+git checkout -b feature/AmazingFeature
+
+# 3. Commit your changes
+git commit -m "Add AmazingFeature"
+
+# 4. Push to the branch
+git push origin feature/AmazingFeature
+
+# 5. Open a Pull Request
+```
+
+Please make sure your code follows the existing style and all features are tested before submitting a PR.
+
+---
+
+## 🐛 Known Issues & Roadmap
+
+- [ ] Add keyboard navigation (arrow keys between cells)
+- [ ] Add undo / redo functionality
+- [ ] Add a notes/pencil mode for candidates
+- [ ] Add dark mode toggle
+- [ ] Add leaderboard / high scores
+- [ ] Add animated puzzle completion screen
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
+
+---
+
+## 👤 Author
+
+**Rohan Rathod**
+
+[![GitHub](https://img.shields.io/badge/GitHub-RohanRathodOnline-181717?style=flat&logo=github)](https://github.com/RohanRathodOnline)
+
+---
+
+<div align="center">
+
+⭐ **Star this repo if you found it useful!** ⭐
+
+Made with ❤️ by [RohanRathodOnline](https://github.com/RohanRathodOnline)
+
+</div>
