@@ -1,9 +1,4 @@
 (() => {
-    // ── Backend URL ────────────────────────────────────────────────────────────
-    // Priority: window.BACKEND_URL (set in config.js) → localhost fallback
-    //
-    // For local development this works as-is.
-    // For GitHub Pages, edit frontend/config.js and set your cloud backend URL.
     const API_BASE_URL = (typeof window.BACKEND_URL === "string" && window.BACKEND_URL.trim())
         ? window.BACKEND_URL.trim().replace(/\/$/, "")
         : "http://localhost:8080";
@@ -26,6 +21,87 @@
     let selectedIndex = null;
     const boardHistory = [];
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // JS Fallback Sudoku Solver (backtracking — runs entirely in the browser)
+    // ─────────────────────────────────────────────────────────────────────────
+    const jsSolver = {
+        // Deep-copy a 9x9 board
+        clone(board) {
+            return board.map(row => [...row]);
+        },
+
+        // Check if placing `val` at (row, col) is valid
+        isSafe(board, row, col, val) {
+            // Check row
+            for (let c = 0; c < 9; c++) {
+                if (board[row][c] === val) return false;
+            }
+            // Check column
+            for (let r = 0; r < 9; r++) {
+                if (board[r][col] === val) return false;
+            }
+            // Check 3x3 box
+            const boxRow = Math.floor(row / 3) * 3;
+            const boxCol = Math.floor(col / 3) * 3;
+            for (let r = boxRow; r < boxRow + 3; r++) {
+                for (let c = boxCol; c < boxCol + 3; c++) {
+                    if (board[r][c] === val) return false;
+                }
+            }
+            return true;
+        },
+
+        // Check if the given clues have any conflicts
+        hasConflicts(board) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const val = board[r][c];
+                    if (val === 0) continue;
+                    // Temporarily clear to check against others
+                    board[r][c] = 0;
+                    if (!this.isSafe(board, r, c, val)) {
+                        board[r][c] = val;
+                        return true;
+                    }
+                    board[r][c] = val;
+                }
+            }
+            return false;
+        },
+
+        // Backtracking solve — modifies board in place, returns true if solved
+        solve(board) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (board[r][c] !== 0) continue;
+                    for (let val = 1; val <= 9; val++) {
+                        if (this.isSafe(board, r, c, val)) {
+                            board[r][c] = val;
+                            if (this.solve(board)) return true;
+                            board[r][c] = 0;
+                        }
+                    }
+                    return false; // No valid value found
+                }
+            }
+            return true; // All cells filled
+        },
+
+        // Main entry: returns { solved: [...] } or { error: "..." }
+        run(board) {
+            const copy = this.clone(board);
+            if (this.hasConflicts(copy)) {
+                return { error: "Board contains conflicting numbers." };
+            }
+            if (this.solve(copy)) {
+                return { solved: copy };
+            }
+            return { error: "This puzzle has no valid solution." };
+        }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     const setStatus = (message, isError = false) => {
         ocrStatus.textContent = message;
         ocrStatus.style.display = "block";
@@ -34,9 +110,7 @@
 
     const showSolveCelebration = () => {
         const existing = document.querySelector(".solve-celebration");
-        if (existing) {
-            existing.remove();
-        }
+        if (existing) existing.remove();
 
         const bubble = document.createElement("div");
         bubble.className = "solve-celebration";
@@ -52,9 +126,7 @@
     const snapshotBoard = () => gridCells.map((cell) => cell.textContent || "");
 
     const restoreBoard = (snapshot) => {
-        if (!Array.isArray(snapshot) || snapshot.length !== 81) {
-            return;
-        }
+        if (!Array.isArray(snapshot) || snapshot.length !== 81) return;
         for (let i = 0; i < 81; i++) {
             gridCells[i].textContent = snapshot[i] || "";
         }
@@ -63,9 +135,7 @@
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     const animateSolveByColumn = async (fromBoard, solvedBoard) => {
-        if (!Array.isArray(fromBoard) || !Array.isArray(solvedBoard)) {
-            return;
-        }
+        if (!Array.isArray(fromBoard) || !Array.isArray(solvedBoard)) return;
 
         const animationOrder = [];
         const visited = new Set();
@@ -102,9 +172,7 @@
 
     const pushHistory = () => {
         boardHistory.push(snapshotBoard());
-        if (boardHistory.length > 100) {
-            boardHistory.shift();
-        }
+        if (boardHistory.length > 100) boardHistory.shift();
     };
 
     const setSelectedCell = (index) => {
@@ -124,9 +192,7 @@
     };
 
     const writeCellValue = (index, value) => {
-        if (index == null || index < 0 || index >= 81) {
-            return;
-        }
+        if (index == null || index < 0 || index >= 81) return;
         gridCells[index].textContent = value === 0 ? "" : String(value);
     };
 
@@ -136,52 +202,34 @@
     };
 
     const renderMatrix = (matrix) => {
-        if (!Array.isArray(matrix) || matrix.length !== 9) {
-            return;
-        }
-
+        if (!Array.isArray(matrix) || matrix.length !== 9) return;
         let index = 0;
         for (let row = 0; row < 9; row++) {
-            if (!Array.isArray(matrix[row]) || matrix[row].length !== 9) {
-                return;
-            }
-
+            if (!Array.isArray(matrix[row]) || matrix[row].length !== 9) return;
             for (let col = 0; col < 9; col++) {
                 const value = Number(matrix[row][col]) || 0;
-                const cell = gridCells[index++];
-                cell.textContent = value === 0 ? "" : String(value);
+                gridCells[index++].textContent = value === 0 ? "" : String(value);
             }
         }
     };
 
     const clearPreview = () => {
-        if (previewImage.src) {
-            URL.revokeObjectURL(previewImage.src);
-        }
+        if (previewImage.src) URL.revokeObjectURL(previewImage.src);
         previewImage.removeAttribute("src");
         dropzone.classList.remove("has-image", "is-processing", "is-dragging");
         clearStatus();
     };
 
     const setPreviewFromFile = (file) => {
-        if (!file) {
-            clearPreview();
-            return;
-        }
-
+        if (!file) { clearPreview(); return; }
         if (!file.type || !file.type.startsWith("image/")) {
             alert("Please select a valid image file.");
             input.value = "";
             clearPreview();
             return;
         }
-
-        if (previewImage.src) {
-            URL.revokeObjectURL(previewImage.src);
-        }
-
-        const objectUrl = URL.createObjectURL(file);
-        previewImage.src = objectUrl;
+        if (previewImage.src) URL.revokeObjectURL(previewImage.src);
+        previewImage.src = URL.createObjectURL(file);
         dropzone.classList.add("has-image");
         dropzone.classList.remove("is-processing");
         setStatus("Image selected. Click Process Image.");
@@ -189,10 +237,7 @@
 
     const processSelectedImage = async () => {
         const file = input.files && input.files[0];
-        if (!file) {
-            setStatus("Please select an image first.", true);
-            return;
-        }
+        if (!file) { setStatus("Please select an image first.", true); return; }
 
         try {
             processImageBtn.disabled = true;
@@ -211,9 +256,7 @@
 
             if (!response.ok) {
                 const fallbackMatrix = payload.rawDetected || payload.cleanedDetected || payload.detected;
-                if (fallbackMatrix) {
-                    renderMatrix(fallbackMatrix);
-                }
+                if (fallbackMatrix) renderMatrix(fallbackMatrix);
                 const message =
                     (payload?.error && typeof payload.error === "object" ? payload.error.message : payload?.error) ||
                     payload?.message ||
@@ -239,9 +282,10 @@
         }
     };
 
+    // ── Event listeners ───────────────────────────────────────────────────────
+
     input.addEventListener("change", (event) => {
-        const file = event.target.files && event.target.files[0];
-        setPreviewFromFile(file);
+        setPreviewFromFile(event.target.files && event.target.files[0]);
     });
 
     changeImageBtn.addEventListener("click", (event) => {
@@ -268,13 +312,8 @@
     dropzone.addEventListener("drop", (event) => {
         event.preventDefault();
         dropzone.classList.remove("is-dragging");
-
-        const droppedFiles = event.dataTransfer?.files;
-        const file = droppedFiles && droppedFiles[0];
-        if (!file) {
-            return;
-        }
-
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) return;
         const dt = new DataTransfer();
         dt.items.add(file);
         input.files = dt.files;
@@ -299,13 +338,9 @@
 
     numberButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            if (selectedIndex == null) {
-                return;
-            }
+            if (selectedIndex == null) return;
             const value = Number(button.textContent);
-            if (value < 1 || value > 9) {
-                return;
-            }
+            if (value < 1 || value > 9) return;
             pushHistory();
             writeCellValue(selectedIndex, value);
         });
@@ -319,69 +354,87 @@
         return item?.querySelector(".circle-btn") || null;
     };
 
-    const undoButton = getActionButton("undo");
-    const eraseButton = getActionButton("erase");
-    const clearAllButton = getActionButton("clear all");
-
-    undoButton?.addEventListener("click", () => {
+    getActionButton("undo")?.addEventListener("click", () => {
         const previous = boardHistory.pop();
-        if (previous) {
-            restoreBoard(previous);
-        }
+        if (previous) restoreBoard(previous);
     });
 
-    eraseButton?.addEventListener("click", () => {
-        if (selectedIndex == null) {
-            return;
-        }
+    getActionButton("erase")?.addEventListener("click", () => {
+        if (selectedIndex == null) return;
         pushHistory();
         writeCellValue(selectedIndex, 0);
     });
 
-    clearAllButton?.addEventListener("click", () => {
+    getActionButton("clear all")?.addEventListener("click", () => {
         pushHistory();
-        gridCells.forEach((cell) => {
-            cell.textContent = "";
-        });
+        gridCells.forEach((cell) => { cell.textContent = ""; });
     });
 
+    // ── Solve button — tries backend first, falls back to JS solver ───────────
     solveBtn.addEventListener("click", async () => {
         const board = readBoardFromGrid();
 
+        solveBtn.disabled = true;
+        setStatus("Solving puzzle...");
+
+        // ── Try backend first ─────────────────────────────────────────────────
         try {
-            solveBtn.disabled = true;
-            setStatus("Solving puzzle...");
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
             const response = await fetch(`${API_BASE_URL}/solve-manual`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ board })
+                body: JSON.stringify({ board }),
+                signal: controller.signal
             });
 
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const message =
-                    (payload?.error && typeof payload.error === "object" ? payload.error.message : payload?.error) ||
-                    payload?.message ||
-                    `Solve failed (${response.status}).`;
-                setStatus(message, true);
-                return;
-            }
+            clearTimeout(timeout);
 
-            if (payload?.solved) {
+            const payload = await response.json().catch(() => ({}));
+
+            if (response.ok && payload?.solved) {
                 pushHistory();
                 await animateSolveByColumn(board, payload.solved);
                 renderMatrix(payload.solved);
                 setStatus("Sudoku solved successfully.");
                 showSolveCelebration();
-            } else {
-                setStatus("Solver returned no solved board.", true);
+                solveBtn.disabled = false;
+                return;
             }
-        } catch (error) {
-            console.error("Manual solve error:", error);
-            setStatus(`Cannot connect to backend at ${API_BASE_URL}. Is the server running?`, true);
-        } finally {
+
+            // Backend responded but returned an error (e.g. invalid board)
+            const message =
+                (payload?.error && typeof payload.error === "object" ? payload.error.message : payload?.error) ||
+                payload?.message ||
+                `Solve failed (${response.status}).`;
+            setStatus(message, true);
             solveBtn.disabled = false;
+            return;
+
+        } catch (err) {
+            // Network error or timeout — fall through to JS solver
+            console.warn("Backend unavailable, using JS solver:", err.message);
         }
+
+        // ── JS fallback solver ────────────────────────────────────────────────
+        setStatus("Backend offline — solving in browser...");
+
+        // yield to browser so status text renders before heavy computation
+        await wait(30);
+
+        const result = jsSolver.run(board);
+
+        if (result.error) {
+            setStatus(result.error, true);
+        } else {
+            pushHistory();
+            await animateSolveByColumn(board, result.solved);
+            renderMatrix(result.solved);
+            setStatus("Sudoku solved in browser (backend was offline).");
+            showSolveCelebration();
+        }
+
+        solveBtn.disabled = false;
     });
 })();
