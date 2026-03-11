@@ -11,4 +11,4 @@
 // Leave the empty string to use http://localhost:8080 (local development).
 // ─────────────────────────────────────────────────────────────────────────────
 
-window.BACKEND_URL = "";  // ← paste your deployed backend URL here
+window.BACKEND_URL = "https://sudoku-obe2.onrender.com";  // ← paste your deployed backend URL here
